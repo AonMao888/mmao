@@ -132,6 +132,336 @@ app.post('/submit/course/form', async (req, res) => {
     }
 })
 
+// Get all forms data
+app.get('/get/all/forms', async (req, res) => {
+    try {
+        const snapshot = await db.collection('forms').get();
+        let formsList = [];
+        
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            formsList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all forms.',
+            data: formsList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving forms!',
+            data: []
+        });
+    }
+});
+
+// Get all students data
+app.get('/get/all/students', async (req, res) => {
+    try {
+        const snapshot = await db.collection('students').get();
+        let studentsList = [];
+        
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            studentsList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all students.',
+            data: studentsList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving students!',
+            data: []
+        });
+    }
+});
+
+// Add course student
+app.post('/add/course/student', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.email) {
+        try {
+            const derivedName = recv.email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            const today = new Date().toISOString().split('T')[0];
+
+            const newStudentRef = await db.collection('students').add({
+                name: recv.name || derivedName,
+                email: recv.email,
+                studentClass: recv.studentClass || 'Grade 9',
+                status: recv.status || 'enrolled',
+                joinDate: today,
+                time: FieldValue.serverTimestamp()
+            });
+
+            res.json({
+                status: 'success',
+                text: 'Student added successfully.',
+                data: {
+                    id: newStudentRef.id,
+                    name: recv.name || derivedName,
+                    email: recv.email,
+                    studentClass: recv.studentClass || 'Grade 9',
+                    status: recv.status || 'enrolled',
+                    joinDate: today
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while adding student!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Email is required!',
+            data: []
+        });
+    }
+});
+
+// Edit course student
+app.post('/edit/course/student', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            const studentRef = db.collection('students').doc(String(recv.id));
+            const updateData = {};
+            if (recv.email) updateData.email = recv.email;
+            if (recv.studentClass) updateData.studentClass = recv.studentClass;
+            if (recv.status) updateData.status = recv.status;
+            if (recv.name) updateData.name = recv.name;
+
+            await studentRef.set(updateData, { merge: true });
+
+            res.json({
+                status: 'success',
+                text: 'Student updated successfully.',
+                data: recv
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while updating student!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Student ID is required!',
+            data: []
+        });
+    }
+});
+
+// Get all certificates data
+app.get('/get/all/certificates', async (req, res) => {
+    try {
+        const snapshot = await db.collection('certificates').get();
+        let certsList = [];
+        
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            certsList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all certificates.',
+            data: certsList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving certificates!',
+            data: []
+        });
+    }
+});
+
+// Add certificate
+app.post('/add/certificate', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.email) {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const newCertRef = await db.collection('certificates').add({
+                displayName: recv.displayName || '',
+                email: recv.email,
+                course: recv.course || '',
+                qualifyDate: recv.qualifyDate || today,
+                grade: recv.grade || '',
+                examScore: recv.examScore || '',
+                assignmentScore: recv.assignmentScore || '',
+                addDate: recv.addDate || today,
+                certificateId: recv.certificateId || '',
+                time: FieldValue.serverTimestamp()
+            });
+
+            res.json({
+                status: 'success',
+                text: 'Certificate added successfully.',
+                data: {
+                    id: newCertRef.id,
+                    displayName: recv.displayName || '',
+                    email: recv.email,
+                    course: recv.course || '',
+                    qualifyDate: recv.qualifyDate || today,
+                    grade: recv.grade || '',
+                    examScore: recv.examScore || '',
+                    assignmentScore: recv.assignmentScore || '',
+                    addDate: recv.addDate || today,
+                    certificateId: recv.certificateId || ''
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while adding certificate!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Email is required!',
+            data: []
+        });
+    }
+});
+
+// Edit certificate
+app.post('/edit/certificate', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            const certRef = db.collection('certificates').doc(String(recv.id));
+            const updateData = {};
+            if (recv.displayName !== undefined) updateData.displayName = recv.displayName;
+            if (recv.email !== undefined) updateData.email = recv.email;
+            if (recv.course !== undefined) updateData.course = recv.course;
+            if (recv.qualifyDate !== undefined) updateData.qualifyDate = recv.qualifyDate;
+            if (recv.grade !== undefined) updateData.grade = recv.grade;
+            if (recv.examScore !== undefined) updateData.examScore = recv.examScore;
+            if (recv.assignmentScore !== undefined) updateData.assignmentScore = recv.assignmentScore;
+            if (recv.addDate !== undefined) updateData.addDate = recv.addDate;
+            if (recv.certificateId !== undefined) updateData.certificateId = recv.certificateId;
+
+            await certRef.set(updateData, { merge: true });
+
+            res.json({
+                status: 'success',
+                text: 'Certificate updated successfully.',
+                data: recv
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while updating certificate!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Certificate ID is required!',
+            data: []
+        });
+    }
+});
+
+// Check certificate by ID
+app.get('/check/certificate/:id', async (req, res) => {
+    const certId = req.params.id;
+    try {
+        // First, try to query by 'certificateId' field
+        const snapshot = await db.collection('certificates').where('certificateId', '==', certId).get();
+        
+        if (!snapshot.empty) {
+            let certData = null;
+            snapshot.forEach(doc => {
+                let data = doc.data();
+                if (data.time) {
+                    data.time = getdate(data.time);
+                }
+                certData = {
+                    id: doc.id,
+                    ...data
+                };
+            });
+            return res.json({
+                status: 'success',
+                text: 'Certificate found.',
+                data: certData
+            });
+        }
+
+        // If not found by certificateId field, try finding by document ID
+        const docRef = await db.collection('certificates').doc(certId).get();
+        if (docRef.exists) {
+            let data = docRef.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            return res.json({
+                status: 'success',
+                text: 'Certificate found.',
+                data: {
+                    id: docRef.id,
+                    ...data
+                }
+            });
+        }
+
+        res.json({
+            status: 'fail',
+            text: 'Certificate not found.',
+            data: null
+        });
+
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while checking certificate!',
+            data: null
+        });
+    }
+});
+
 app.listen(80, () => {
     console.log('Server was started on port 80.');
 })
