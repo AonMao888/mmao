@@ -209,6 +209,8 @@ app.post('/add/course/student', async (req, res) => {
                 email: recv.email,
                 studentClass: recv.studentClass || 'Grade 9',
                 status: recv.status || 'enrolled',
+                address: recv.address || '',     // Added address
+                gender: recv.gender || 'Male',
                 joinDate: today,
                 time: FieldValue.serverTimestamp()
             });
@@ -222,6 +224,8 @@ app.post('/add/course/student', async (req, res) => {
                     email: recv.email,
                     studentClass: recv.studentClass || 'Grade 9',
                     status: recv.status || 'enrolled',
+                    address: recv.address || '',
+                    gender: recv.gender || 'Male',
                     joinDate: today
                 }
             });
@@ -458,6 +462,167 @@ app.get('/check/certificate/:id', async (req, res) => {
             status: 'fail',
             text: 'Something went wrong while checking certificate!',
             data: null
+        });
+    }
+});
+
+// Sync or Update User Auth Data in Firestore
+app.post('/sync/user', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.uid) {
+        try {
+            const userRef = db.collection('users').doc(String(recv.uid));
+            const doc = await userRef.get();
+
+            const userData = {
+                uid: recv.uid,
+                email: recv.email || '',
+                displayName: recv.displayName || '',
+                lastActive: FieldValue.serverTimestamp()
+            };
+
+            if (!doc.exists) {
+                // If user doesn't exist in database, create new document
+                userData.createdAt = FieldValue.serverTimestamp();
+                userData.completedCourses = [];
+                userData.enrolledCourses = [];
+                userData.role = 'student';
+                userData.bio = '';
+                userData.photoURL = recv.photoURL || null;
+                
+                await userRef.set(userData);
+                return res.json({
+                    status: 'success',
+                    text: 'User created in database successfully.',
+                    data: userData
+                });
+            } else {
+                // If user exists, check and update if there are any changes (like displayName or email)
+                const existingData = doc.data();
+                const updates = {};
+                
+                if (recv.displayName && recv.displayName !== existingData.displayName) {
+                    updates.displayName = recv.displayName;
+                }
+                if (recv.email && recv.email !== existingData.email) {
+                    updates.email = recv.email;
+                }
+                if (recv.photoURL && recv.photoURL !== existingData.photoURL) {
+                    updates.photoURL = recv.photoURL;
+                }
+                
+                updates.lastActive = FieldValue.serverTimestamp();
+
+                await userRef.update(updates);
+
+                return res.json({
+                    status: 'success',
+                    text: 'User data synchronized and updated successfully.',
+                    data: { ...existingData, ...updates }
+                });
+            }
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while syncing user data!',
+                data: null
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'User UID is required!',
+            data: null
+        });
+    }
+});
+
+// Update user profile (Address, Name, etc.) in Firestore
+app.post('/update/profile', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.uid) {
+        try {
+            const userRef = db.collection('users').doc(String(recv.uid));
+            const doc = await userRef.get();
+
+            const updateData = {
+                lastActive: FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp()
+            };
+
+            if (recv.address !== undefined) {
+                updateData.address = recv.address;
+            }
+            if (recv.displayName !== undefined) {
+                updateData.displayName = recv.displayName;
+            }
+
+            if (!doc.exists) {
+                // If user document doesn't exist yet, create it
+                updateData.uid = recv.uid;
+                updateData.email = recv.email || '';
+                updateData.createdAt = FieldValue.serverTimestamp();
+                await userRef.set(updateData);
+            } else {
+                // Update existing user document
+                await userRef.update(updateData);
+            }
+
+            res.json({
+                status: 'success',
+                text: 'Profile updated successfully in database.',
+                data: updateData
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while updating profile!',
+                data: null
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'User UID is required!',
+            data: null
+        });
+    }
+});
+
+// Get all users data from Firestore users collection
+app.get('/get/all/users', async (req, res) => {
+    try {
+        const snapshot = await db.collection('users').get();
+        let usersList = [];
+        
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            // Convert timestamps if available
+            if (data.createdAt && typeof data.createdAt.toDate === 'function') {
+                data.createdAt = getdate(data.createdAt);
+            }
+            if (data.lastActive && typeof data.lastActive.toDate === 'function') {
+                data.lastActive = getdate(data.lastActive);
+            }
+            usersList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all users.',
+            data: usersList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving users!',
+            data: []
         });
     }
 });
