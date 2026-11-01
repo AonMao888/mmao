@@ -663,8 +663,6 @@ app.get('/student/course', async (req, res) => {
                 id: doc.id,
                 title: data.studentClass || 'Enrolled Course', // ဥပမာ - "linux-noob-to-pro"
                 level: data.status || 'Active',                 // ဥပမာ - "enrolled"
-                percent: 85,                                    // Progress bar အတွက် percent တန်ဖိုး
-                color: '#4f46e5',
                 ...data
             });
         });
