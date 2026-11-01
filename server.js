@@ -257,6 +257,8 @@ app.post('/edit/course/student', async (req, res) => {
             if (recv.studentClass) updateData.studentClass = recv.studentClass;
             if (recv.status) updateData.status = recv.status;
             if (recv.name) updateData.name = recv.name;
+            if (recv.address) updateData.address = recv.address;
+            if (recv.gender) updateData.gender = recv.gender;
 
             await studentRef.set(updateData, { merge: true });
 
@@ -622,6 +624,62 @@ app.get('/get/all/users', async (req, res) => {
         res.json({
             status: 'fail',
             text: 'Something went wrong while retrieving users!',
+            data: []
+        });
+    }
+});
+
+// Get student courses/progress by email using path /student/course
+app.get('/student/course', async (req, res) => {
+    const userEmail = req.query.email ? req.query.email.trim() : '';
+    console.log("Requested Email:", userEmail);
+
+    if (!userEmail) {
+        return res.json({
+            status: 'fail',
+            text: 'Email query parameter is required!',
+            data: []
+        });
+    }
+
+    try {
+        const studentsSnapshot = await db.collection('students')
+            .where('email', '==', userEmail)
+            .get();
+
+        if (studentsSnapshot.empty) {
+            console.log("No student found for email:", userEmail);
+            return res.json({
+                status: 'success',
+                text: 'No student record found for this email.',
+                data: []
+            });
+        }
+
+        let studentList = [];
+        studentsSnapshot.forEach(doc => {
+            const data = doc.data();
+            studentList.push({
+                id: doc.id,
+                title: data.studentClass || 'Enrolled Course', // ဥပမာ - "linux-noob-to-pro"
+                level: data.status || 'Active',                 // ဥပမာ - "enrolled"
+                percent: 85,                                    // Progress bar အတွက် percent တန်ဖိုး
+                color: '#4f46e5',
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Student records retrieved successfully.',
+            data: studentList
+        });
+
+    } catch (error) {
+        console.error('Error fetching student course:', error);
+        res.json({
+            status: 'fail',
+            text: 'Server error while fetching student course.',
             data: []
         });
     }
