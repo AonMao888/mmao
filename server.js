@@ -632,7 +632,6 @@ app.get('/get/all/users', async (req, res) => {
 // Get student courses/progress by email using path /student/course
 app.get('/student/course', async (req, res) => {
     const userEmail = req.query.email ? req.query.email.trim() : '';
-    console.log("Requested Email:", userEmail);
 
     if (!userEmail) {
         return res.json({
@@ -678,6 +677,61 @@ app.get('/student/course', async (req, res) => {
         res.json({
             status: 'fail',
             text: 'Server error while fetching student course.',
+            data: []
+        });
+    }
+});
+
+// Get student certificates by email using path /student/certificates
+app.get('/student/certificates', async (req, res) => {
+    const userEmail = req.query.email ? req.query.email.trim() : '';
+
+    if (!userEmail) {
+        return res.json({
+            status: 'fail',
+            text: 'Email query parameter is required!',
+            data: []
+        });
+    }
+
+    try {
+        const certsSnapshot = await db.collection('certificates')
+            .where('email', '==', userEmail)
+            .get();
+
+        if (certsSnapshot.empty) {
+            console.log("No certificate found for email:", userEmail);
+            return res.json({
+                status: 'success',
+                text: 'No certificate record found for this email.',
+                data: []
+            });
+        }
+
+        let certList = [];
+        certsSnapshot.forEach(doc => {
+            const data = doc.data();
+            certList.push({
+                id: doc.id,
+                course: data.course || 'Course Certificate',
+                certificateId: data.certificateId || '',
+                grade: data.grade || 'N/A',
+                qualifyDate: data.qualifyDate || '',
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Certificates retrieved successfully.',
+            data: certList
+        });
+
+    } catch (error) {
+        console.error('Error fetching student certificates:', error);
+        res.json({
+            status: 'fail',
+            text: 'Server error while fetching certificates.',
             data: []
         });
     }
