@@ -771,6 +771,110 @@ app.get('/get/course/:id', async (req, res) => {
     }
 });
 
+// Add class
+app.post('/add/class', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.name) {
+        try {
+            const newClassRef = await db.collection('classes').add({
+                name: recv.name,
+                description: recv.description || '',
+                instructor: recv.instructor || '',
+                time: FieldValue.serverTimestamp()
+            });
+
+            res.json({
+                status: 'success',
+                text: 'Class added successfully.',
+                data: {
+                    id: newClassRef.id,
+                    ...recv
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while adding class!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Class name is required!',
+            data: []
+        });
+    }
+});
+
+// Edit class
+app.post('/edit/class', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            const classRef = db.collection('classes').doc(String(recv.id));
+            const updateData = {};
+            if (recv.name !== undefined) updateData.name = recv.name;
+            if (recv.description !== undefined) updateData.description = recv.description;
+            if (recv.instructor !== undefined) updateData.instructor = recv.instructor;
+
+            await classRef.set(updateData, { merge: true });
+
+            res.json({
+                status: 'success',
+                text: 'Class updated successfully.',
+                data: recv
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while updating class!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Class ID is required!',
+            data: []
+        });
+    }
+});
+
+// Get all classes data
+app.get('/get/all/classes', async (req, res) => {
+    try {
+        const snapshot = await db.collection('classes').get();
+        let classesList = [];
+
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            classesList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all classes.',
+            data: classesList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving classes!',
+            data: []
+        });
+    }
+});
+
 app.listen(80, () => {
     console.log('Server was started on port 80.');
 })
