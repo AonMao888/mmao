@@ -15,7 +15,7 @@ app.use(cors({
 let serviceAccount;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
-}else{
+} else {
     serviceAccount = require('./mmao-6395-firebase-adminsdk-fbsvc-1ac9271187.json')
 }
 
@@ -137,7 +137,7 @@ app.get('/get/all/forms', async (req, res) => {
     try {
         const snapshot = await db.collection('forms').get();
         let formsList = [];
-        
+
         snapshot.forEach(doc => {
             let data = doc.data();
             if (data.time) {
@@ -169,7 +169,7 @@ app.get('/get/all/students', async (req, res) => {
     try {
         const snapshot = await db.collection('students').get();
         let studentsList = [];
-        
+
         snapshot.forEach(doc => {
             let data = doc.data();
             if (data.time) {
@@ -289,7 +289,7 @@ app.get('/get/all/certificates', async (req, res) => {
     try {
         const snapshot = await db.collection('certificates').get();
         let certsList = [];
-        
+
         snapshot.forEach(doc => {
             let data = doc.data();
             if (data.time) {
@@ -415,7 +415,7 @@ app.get('/check/certificate/:id', async (req, res) => {
     try {
         // First, try to query by 'certificateId' field
         const snapshot = await db.collection('certificates').where('certificateId', '==', certId).get();
-        
+
         if (!snapshot.empty) {
             let certData = null;
             snapshot.forEach(doc => {
@@ -491,7 +491,7 @@ app.post('/sync/user', async (req, res) => {
                 userData.role = 'student';
                 userData.bio = '';
                 userData.photoURL = recv.photoURL || null;
-                
+
                 await userRef.set(userData);
                 return res.json({
                     status: 'success',
@@ -502,7 +502,7 @@ app.post('/sync/user', async (req, res) => {
                 // If user exists, check and update if there are any changes (like displayName or email)
                 const existingData = doc.data();
                 const updates = {};
-                
+
                 if (recv.displayName && recv.displayName !== existingData.displayName) {
                     updates.displayName = recv.displayName;
                 }
@@ -512,7 +512,7 @@ app.post('/sync/user', async (req, res) => {
                 if (recv.photoURL && recv.photoURL !== existingData.photoURL) {
                     updates.photoURL = recv.photoURL;
                 }
-                
+
                 updates.lastActive = FieldValue.serverTimestamp();
 
                 await userRef.update(updates);
@@ -598,7 +598,7 @@ app.get('/get/all/users', async (req, res) => {
     try {
         const snapshot = await db.collection('users').get();
         let usersList = [];
-        
+
         snapshot.forEach(doc => {
             let data = doc.data();
             // Convert timestamps if available
@@ -732,6 +732,40 @@ app.get('/student/certificates', async (req, res) => {
         res.json({
             status: 'fail',
             text: 'Server error while fetching certificates.',
+            data: []
+        });
+    }
+});
+
+// Get all courses data from Firestore collection
+app.get('/get/course/:id', async (req, res) => {
+    try {
+        let { id } = req.params;
+        const snapshot = await db.collection('courses').doc(id).get();
+        let usersList = [];
+        if (snapshot.exists) {
+            let coursedata = snapshot.data();
+            let parseddata = {
+                id: snapshot.id,
+                ...coursedata
+            }
+            res.json({
+                status: 'success',
+                text: 'Course data got.',
+                data: parseddata
+            });
+        } else {
+            res.json({
+                status: 'fail',
+                text: 'There have no course with this ID!',
+                data: []
+            });
+        }
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving course!',
             data: []
         });
     }
