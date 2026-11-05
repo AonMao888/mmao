@@ -785,6 +785,7 @@ app.post('/add/class', async (req, res) => {
                 schedule: recv.schedule || '',
                 fee: recv.fee || '',
                 status: recv.status || 'Active',
+                classLink: recv.classLink || '',
                 time: FieldValue.serverTimestamp()
             });
 
@@ -829,6 +830,7 @@ app.post('/edit/class', async (req, res) => {
             if (recv.schedule !== undefined) updateData.schedule = recv.schedule;
             if (recv.fee !== undefined) updateData.fee = recv.fee;
             if (recv.status !== undefined) updateData.status = recv.status;
+            if (recv.classLink !== undefined) updateData.classLink = recv.classLink;
 
             await classRef.set(updateData, { merge: true });
 
