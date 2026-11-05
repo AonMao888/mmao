@@ -771,15 +771,20 @@ app.get('/get/course/:id', async (req, res) => {
     }
 });
 
-// Add class
+// Add class with logoemoji and description (Updated to support className)
 app.post('/add/class', async (req, res) => {
     let recv = req.body;
-    if (recv && recv.name) {
+    const classNameVal = recv.className || recv.name;
+    if (recv && classNameVal) {
         try {
             const newClassRef = await db.collection('classes').add({
-                name: recv.name,
+                className: classNameVal,
+                logoemoji: recv.logoemoji || '',
                 description: recv.description || '',
                 instructor: recv.instructor || '',
+                schedule: recv.schedule || '',
+                fee: recv.fee || '',
+                status: recv.status || 'Active',
                 time: FieldValue.serverTimestamp()
             });
 
@@ -788,6 +793,7 @@ app.post('/add/class', async (req, res) => {
                 text: 'Class added successfully.',
                 data: {
                     id: newClassRef.id,
+                    className: classNameVal,
                     ...recv
                 }
             });
@@ -808,16 +814,21 @@ app.post('/add/class', async (req, res) => {
     }
 });
 
-// Edit class
+// Edit class (Updated to support className, schedule, fee, status)
 app.post('/edit/class', async (req, res) => {
     let recv = req.body;
     if (recv && recv.id) {
         try {
             const classRef = db.collection('classes').doc(String(recv.id));
             const updateData = {};
-            if (recv.name !== undefined) updateData.name = recv.name;
+            if (recv.className !== undefined) updateData.className = recv.className;
+            if (recv.name !== undefined) updateData.className = recv.name;
+            if (recv.logoemoji !== undefined) updateData.logoemoji = recv.logoemoji;
             if (recv.description !== undefined) updateData.description = recv.description;
             if (recv.instructor !== undefined) updateData.instructor = recv.instructor;
+            if (recv.schedule !== undefined) updateData.schedule = recv.schedule;
+            if (recv.fee !== undefined) updateData.fee = recv.fee;
+            if (recv.status !== undefined) updateData.status = recv.status;
 
             await classRef.set(updateData, { merge: true });
 
