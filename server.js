@@ -357,7 +357,7 @@ app.post('/add/certificate', async (req, res) => {
             const newCertRef = await db.collection('certificates').add({
                 displayName: recv.displayName || '',
                 email: recv.email,
-                course: recv.course || '',
+                course: recv.course || '', // 👈 Class/Course အမည် သို့မဟုတ် ID
                 qualifyDate: recv.qualifyDate || today,
                 grade: recv.grade || '',
                 examScore: recv.examScore || '',
@@ -409,7 +409,7 @@ app.post('/edit/certificate', async (req, res) => {
             const updateData = {};
             if (recv.displayName !== undefined) updateData.displayName = recv.displayName;
             if (recv.email !== undefined) updateData.email = recv.email;
-            if (recv.course !== undefined) updateData.course = recv.course;
+            if (recv.course !== undefined) updateData.course = recv.course; // 👈 Course/Class အမည် Update လုပ်ရန်
             if (recv.qualifyDate !== undefined) updateData.qualifyDate = recv.qualifyDate;
             if (recv.grade !== undefined) updateData.grade = recv.grade;
             if (recv.examScore !== undefined) updateData.examScore = recv.examScore;
