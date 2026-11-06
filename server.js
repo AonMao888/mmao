@@ -207,7 +207,8 @@ app.post('/add/course/student', async (req, res) => {
             const newStudentRef = await db.collection('students').add({
                 name: recv.name || derivedName,
                 email: recv.email,
-                studentClass: recv.studentClass || 'Grade 9',
+                studentClass: recv.studentClass || '',
+                className: recv.className || '',
                 status: recv.status || 'enrolled',
                 address: recv.address || '',     // Added address
                 gender: recv.gender || 'Male',
@@ -222,7 +223,8 @@ app.post('/add/course/student', async (req, res) => {
                     id: newStudentRef.id,
                     name: recv.name || derivedName,
                     email: recv.email,
-                    studentClass: recv.studentClass || 'Grade 9',
+                    studentClass: recv.studentClass || '',
+                    className: recv.className || '',
                     status: recv.status || 'enrolled',
                     address: recv.address || '',
                     gender: recv.gender || 'Male',
