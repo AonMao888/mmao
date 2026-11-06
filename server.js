@@ -286,6 +286,7 @@ app.post('/edit/course/student', async (req, res) => {
             const updateData = {};
             if (recv.email) updateData.email = recv.email;
             if (recv.studentClass) updateData.studentClass = recv.studentClass;
+            if (recv.className) updateData.className = recv.className; // 👈 ဤနေရာလေးကို ထည့်ပေးရန်လိုပါတယ်
             if (recv.status) updateData.status = recv.status;
             if (recv.name) updateData.name = recv.name;
             if (recv.address) updateData.address = recv.address;
