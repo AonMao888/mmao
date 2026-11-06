@@ -888,6 +888,54 @@ app.get('/get/all/classes', async (req, res) => {
     }
 });
 
+// Check if user is an enrolled student by email
+app.get('/check/student', async (req, res) => {
+    const userEmail = req.query.email ? req.query.email.trim() : '';
+
+    if (!userEmail) {
+        return res.json({
+            status: 'fail',
+            text: 'Email query parameter is required!',
+            isStudent: false
+        });
+    }
+
+    try {
+        const studentsSnapshot = await db.collection('students')
+            .where('email', '==', userEmail)
+            .get();
+
+        if (studentsSnapshot.empty) {
+            return res.json({
+                status: 'success',
+                text: 'Student record not found.',
+                isStudent: false
+            });
+        }
+
+        // Student ဖြစ်ကြောင်း စစ်ဆေးတွေ့ရှိပါက
+        let studentData = null;
+        studentsSnapshot.forEach(doc => {
+            studentData = { id: doc.id, ...doc.data() };
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Student verified successfully.',
+            isStudent: true,
+            data: studentData
+        });
+
+    } catch (error) {
+        console.error('Error checking student:', error);
+        res.json({
+            status: 'fail',
+            text: 'Server error while checking student status.',
+            isStudent: false
+        });
+    }
+});
+
 app.listen(80, () => {
     console.log('Server was started on port 80.');
 })
