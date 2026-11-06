@@ -248,6 +248,35 @@ app.post('/add/course/student', async (req, res) => {
     }
 });
 
+// Delete course student
+app.post('/delete/course/student', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            await db.collection('students').doc(String(recv.id)).delete();
+
+            res.json({
+                status: 'success',
+                text: 'Student deleted successfully.',
+                data: { id: recv.id }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while deleting student!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Student ID is required!',
+            data: []
+        });
+    }
+});
+
 // Edit course student
 app.post('/edit/course/student', async (req, res) => {
     let recv = req.body;
