@@ -741,7 +741,7 @@ app.get('/student/certificates', async (req, res) => {
 app.get('/get/course/:id', async (req, res) => {
     try {
         let { id } = req.params;
-        const snapshot = await db.collection('courses').doc(id).get();
+        const snapshot = await db.collection('classes').doc(id).get();
         let usersList = [];
         if (snapshot.exists) {
             let coursedata = snapshot.data();
