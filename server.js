@@ -968,6 +968,211 @@ app.get('/check/student', async (req, res) => {
     }
 });
 
+// Add review
+app.post('/add/review', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.email) {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const newReviewRef = await db.collection('reviews').add({
+                uid: recv.uid || '',
+                name: recv.name || '',
+                email: recv.email,
+                rating: Number(recv.rating) || 5,
+                comment: recv.comment || '',
+                date: recv.date || today,
+                time: FieldValue.serverTimestamp()
+            });
+
+            res.json({
+                status: 'success',
+                text: 'Review added successfully.',
+                data: {
+                    id: newReviewRef.id,
+                    uid: recv.uid || '',
+                    name: recv.name || '',
+                    email: recv.email,
+                    rating: Number(recv.rating) || 5,
+                    comment: recv.comment || '',
+                    date: recv.date || today
+                }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while adding review!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Email is required!',
+            data: []
+        });
+    }
+});
+
+// Get all reviews
+app.get('/all/reviews', async (req, res) => {
+    try {
+        const snapshot = await db.collection('reviews').orderBy('time', 'desc').get();
+        let reviewsList = [];
+
+        snapshot.forEach(doc => {
+            let data = doc.data();
+            if (data.time) {
+                data.time = getdate(data.time);
+            }
+            reviewsList.push({
+                id: doc.id,
+                ...data
+            });
+        });
+
+        res.json({
+            status: 'success',
+            text: 'Successfully retrieved all reviews.',
+            data: reviewsList
+        });
+    } catch (error) {
+        console.log(error);
+        res.json({
+            status: 'fail',
+            text: 'Something went wrong while retrieving reviews!',
+            data: []
+        });
+    }
+});
+
+// Delete review
+app.post('/delete/review', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            await db.collection('reviews').doc(String(recv.id)).delete();
+
+            res.json({
+                status: 'success',
+                text: 'Review deleted successfully.',
+                data: { id: recv.id }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({
+                status: 'fail',
+                text: 'Something went wrong while deleting review!',
+                data: []
+            });
+        }
+    } else {
+        res.json({
+            status: 'fail',
+            text: 'Review ID is required!',
+            data: []
+        });
+    }
+});
+
+// Get all tutorials
+app.get('/all/tutorials', async (req, res) => {
+    try {
+        const snapshot = await db.collection('tutorials').get();
+        let tutorialsList = [];
+        snapshot.forEach(doc => {
+            tutorialsList.push({ id: doc.id, ...doc.data() });
+        });
+        res.json({ status: 'success', data: tutorialsList });
+    } catch (error) {
+        console.log(error);
+        res.json({ status: 'fail', text: 'Failed to fetch tutorials', data: [] });
+    }
+});
+
+// Add tutorial
+app.post('/add/tutorial', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.title) {
+        try {
+            const docRef = await db.collection('tutorials').add({
+                emoji: recv.emoji || '🎥',
+                title: recv.title || '',
+                category: recv.category || 'General',
+                duration: recv.duration || '',
+                videoLink: recv.videoLink || '',
+                description: recv.description || '',
+                date: new Date().toISOString().split('T')[0]
+            });
+
+            const newDoc = await docRef.get();
+            res.json({
+                status: 'success',
+                text: 'Tutorial added successfully.',
+                data: { id: newDoc.id, ...newDoc.data() }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({ status: 'fail', text: 'Failed to add tutorial.', data: [] });
+        }
+    } else {
+        res.json({ status: 'fail', text: 'Tutorial title is required!', data: [] });
+    }
+});
+
+// Edit tutorial
+app.post('/edit/tutorial', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            const tutorialRef = db.collection('tutorials').doc(String(recv.id));
+            const doc = await tutorialRef.get();
+            
+            if (!doc.exists) {
+                return res.json({ status: 'fail', text: 'Tutorial not found!', data: [] });
+            }
+
+            const updateData = {
+                title: recv.title || '',
+                category: recv.category || 'General',
+                duration: recv.duration || '',
+                videoLink: recv.videoLink || '',
+                emoji: recv.emoji || '🎥',
+                description: recv.description || ''
+            };
+
+            await tutorialRef.update(updateData);
+
+            res.json({
+                status: 'success',
+                text: 'Tutorial updated successfully.',
+                data: { id: recv.id, ...updateData }
+            });
+        } catch (error) {
+            console.log(error);
+            res.json({ status: 'fail', text: 'Failed to update tutorial.', data: [] });
+        }
+    } else {
+        res.json({ status: 'fail', text: 'Tutorial ID is required!', data: [] });
+    }
+});
+
+// Delete tutorial
+app.post('/delete/tutorial', async (req, res) => {
+    let recv = req.body;
+    if (recv && recv.id) {
+        try {
+            await db.collection('tutorials').doc(String(recv.id)).delete();
+            res.json({ status: 'success', text: 'Tutorial deleted successfully.', data: { id: recv.id } });
+        } catch (error) {
+            console.log(error);
+            res.json({ status: 'fail', text: 'Failed to delete tutorial.', data: [] });
+        }
+    } else {
+        res.json({ status: 'fail', text: 'Tutorial ID is required!', data: [] });
+    }
+});
+
 app.listen(80, () => {
     console.log('Server was started on port 80.');
 })
