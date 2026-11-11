@@ -196,7 +196,7 @@ app.get('/get/all/students', async (req, res) => {
     }
 });
 
-// Add course student
+// Add course student (Updated with studentId)
 app.post('/add/course/student', async (req, res) => {
     let recv = req.body;
     if (recv && recv.email) {
@@ -205,12 +205,13 @@ app.post('/add/course/student', async (req, res) => {
             const today = new Date().toISOString().split('T')[0];
 
             const newStudentRef = await db.collection('students').add({
+                studentId: recv.studentId || '', // 👈 Student ID သီးသန့်ထည့်သွင်းရန်
                 name: recv.name || derivedName,
                 email: recv.email,
                 studentClass: recv.studentClass || '',
                 className: recv.className || '',
                 status: recv.status || 'enrolled',
-                address: recv.address || '',     // Added address
+                address: recv.address || '',
                 gender: recv.gender || 'Male',
                 joinDate: today,
                 time: FieldValue.serverTimestamp()
@@ -221,6 +222,7 @@ app.post('/add/course/student', async (req, res) => {
                 text: 'Student added successfully.',
                 data: {
                     id: newStudentRef.id,
+                    studentId: recv.studentId || '',
                     name: recv.name || derivedName,
                     email: recv.email,
                     studentClass: recv.studentClass || '',
@@ -277,16 +279,17 @@ app.post('/delete/course/student', async (req, res) => {
     }
 });
 
-// Edit course student
+// Edit course student (Updated with studentId)
 app.post('/edit/course/student', async (req, res) => {
     let recv = req.body;
     if (recv && recv.id) {
         try {
             const studentRef = db.collection('students').doc(String(recv.id));
             const updateData = {};
+            if (recv.studentId !== undefined) updateData.studentId = recv.studentId; // 👈 Student ID update ပြုလုပ်ရန်
             if (recv.email) updateData.email = recv.email;
             if (recv.studentClass) updateData.studentClass = recv.studentClass;
-            if (recv.className) updateData.className = recv.className; // 👈 ဤနေရာလေးကို ထည့်ပေးရန်လိုပါတယ်
+            if (recv.className) updateData.className = recv.className;
             if (recv.status) updateData.status = recv.status;
             if (recv.name) updateData.name = recv.name;
             if (recv.address) updateData.address = recv.address;
@@ -357,7 +360,7 @@ app.post('/add/certificate', async (req, res) => {
             const newCertRef = await db.collection('certificates').add({
                 displayName: recv.displayName || '',
                 email: recv.email,
-                course: recv.course || '', // 👈 Class/Course အမည် သို့မဟုတ် ID
+                course: recv.course || '',
                 qualifyDate: recv.qualifyDate || today,
                 grade: recv.grade || '',
                 examScore: recv.examScore || '',
@@ -409,7 +412,7 @@ app.post('/edit/certificate', async (req, res) => {
             const updateData = {};
             if (recv.displayName !== undefined) updateData.displayName = recv.displayName;
             if (recv.email !== undefined) updateData.email = recv.email;
-            if (recv.course !== undefined) updateData.course = recv.course; // 👈 Course/Class အမည် Update လုပ်ရန်
+            if (recv.course !== undefined) updateData.course = recv.course;
             if (recv.qualifyDate !== undefined) updateData.qualifyDate = recv.qualifyDate;
             if (recv.grade !== undefined) updateData.grade = recv.grade;
             if (recv.examScore !== undefined) updateData.examScore = recv.examScore;
@@ -445,7 +448,6 @@ app.post('/edit/certificate', async (req, res) => {
 app.get('/check/certificate/:id', async (req, res) => {
     const certId = req.params.id;
     try {
-        // First, try to query by 'certificateId' field
         const snapshot = await db.collection('certificates').where('certificateId', '==', certId).get();
 
         if (!snapshot.empty) {
@@ -467,7 +469,6 @@ app.get('/check/certificate/:id', async (req, res) => {
             });
         }
 
-        // If not found by certificateId field, try finding by document ID
         const docRef = await db.collection('certificates').doc(certId).get();
         if (docRef.exists) {
             let data = docRef.data();
@@ -516,7 +517,6 @@ app.post('/sync/user', async (req, res) => {
             };
 
             if (!doc.exists) {
-                // If user doesn't exist in database, create new document
                 userData.createdAt = FieldValue.serverTimestamp();
                 userData.completedCourses = [];
                 userData.enrolledCourses = [];
@@ -531,7 +531,6 @@ app.post('/sync/user', async (req, res) => {
                     data: userData
                 });
             } else {
-                // If user exists, check and update if there are any changes (like displayName or email)
                 const existingData = doc.data();
                 const updates = {};
 
@@ -572,7 +571,7 @@ app.post('/sync/user', async (req, res) => {
     }
 });
 
-// Update user profile (Address, Name, etc.) in Firestore
+// Update user profile
 app.post('/update/profile', async (req, res) => {
     let recv = req.body;
     if (recv && recv.uid) {
@@ -593,13 +592,11 @@ app.post('/update/profile', async (req, res) => {
             }
 
             if (!doc.exists) {
-                // If user document doesn't exist yet, create it
                 updateData.uid = recv.uid;
                 updateData.email = recv.email || '';
                 updateData.createdAt = FieldValue.serverTimestamp();
                 await userRef.set(updateData);
             } else {
-                // Update existing user document
                 await userRef.update(updateData);
             }
 
@@ -625,7 +622,7 @@ app.post('/update/profile', async (req, res) => {
     }
 });
 
-// Get all users data from Firestore users collection
+// Get all users data
 app.get('/get/all/users', async (req, res) => {
     try {
         const snapshot = await db.collection('users').get();
@@ -633,7 +630,6 @@ app.get('/get/all/users', async (req, res) => {
 
         snapshot.forEach(doc => {
             let data = doc.data();
-            // Convert timestamps if available
             if (data.createdAt && typeof data.createdAt.toDate === 'function') {
                 data.createdAt = getdate(data.createdAt);
             }
@@ -661,7 +657,7 @@ app.get('/get/all/users', async (req, res) => {
     }
 });
 
-// Get student courses/progress by email using path /student/course
+// Get student course by email
 app.get('/student/course', async (req, res) => {
     const userEmail = req.query.email ? req.query.email.trim() : '';
 
@@ -679,7 +675,6 @@ app.get('/student/course', async (req, res) => {
             .get();
 
         if (studentsSnapshot.empty) {
-            console.log("No student found for email:", userEmail);
             return res.json({
                 status: 'success',
                 text: 'No student record found for this email.',
@@ -692,8 +687,8 @@ app.get('/student/course', async (req, res) => {
             const data = doc.data();
             studentList.push({
                 id: doc.id,
-                title: data.studentClass || 'Enrolled Course', // ဥပမာ - "linux-noob-to-pro"
-                level: data.status || 'Active',                 // ဥပမာ - "enrolled"
+                title: data.studentClass || 'Enrolled Course',
+                level: data.status || 'Active',
                 ...data
             });
         });
@@ -714,7 +709,7 @@ app.get('/student/course', async (req, res) => {
     }
 });
 
-// Get student certificates by email using path /student/certificates
+// Get student certificates by email
 app.get('/student/certificates', async (req, res) => {
     const userEmail = req.query.email ? req.query.email.trim() : '';
 
@@ -732,7 +727,6 @@ app.get('/student/certificates', async (req, res) => {
             .get();
 
         if (certsSnapshot.empty) {
-            console.log("No certificate found for email:", userEmail);
             return res.json({
                 status: 'success',
                 text: 'No certificate record found for this email.',
@@ -769,12 +763,11 @@ app.get('/student/certificates', async (req, res) => {
     }
 });
 
-// Get all courses data from Firestore collection
+// Get course details by ID
 app.get('/get/course/:id', async (req, res) => {
     try {
         let { id } = req.params;
         const snapshot = await db.collection('classes').doc(id).get();
-        let usersList = [];
         if (snapshot.exists) {
             let coursedata = snapshot.data();
             let parseddata = {
@@ -803,7 +796,7 @@ app.get('/get/course/:id', async (req, res) => {
     }
 });
 
-// Add class with logoemoji and description (Updated to support className)
+// Add class
 app.post('/add/class', async (req, res) => {
     let recv = req.body;
     const classNameVal = recv.className || recv.name;
@@ -847,7 +840,7 @@ app.post('/add/class', async (req, res) => {
     }
 });
 
-// Edit class (Updated to support className, schedule, fee, status)
+// Edit class
 app.post('/edit/class', async (req, res) => {
     let recv = req.body;
     if (recv && recv.id) {
@@ -888,7 +881,7 @@ app.post('/edit/class', async (req, res) => {
     }
 });
 
-// Get all classes data
+// Get all classes
 app.get('/get/all/classes', async (req, res) => {
     try {
         const snapshot = await db.collection('classes').get();
@@ -920,7 +913,7 @@ app.get('/get/all/classes', async (req, res) => {
     }
 });
 
-// Check if user is an enrolled student by email
+// Check if user is an enrolled student
 app.get('/check/student', async (req, res) => {
     const userEmail = req.query.email ? req.query.email.trim() : '';
 
@@ -945,7 +938,6 @@ app.get('/check/student', async (req, res) => {
             });
         }
 
-        // Student ဖြစ်ကြောင်း စစ်ဆေးတွေ့ရှိပါက
         let studentData = null;
         studentsSnapshot.forEach(doc => {
             studentData = { id: doc.id, ...doc.data() };
@@ -1175,4 +1167,4 @@ app.post('/delete/tutorial', async (req, res) => {
 
 app.listen(80, () => {
     console.log('Server was started on port 80.');
-})
+});
