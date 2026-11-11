@@ -89,6 +89,7 @@ app.post('/submit/course/form', async (req, res) => {
                 firstName: recv.firstName,
                 lastName: recv.lastName,
                 emailAddress: recv.emailAddress,
+                phone: recv.phone || '',
                 address: recv.address,
                 city: recv.city,
                 country: recv.country,
